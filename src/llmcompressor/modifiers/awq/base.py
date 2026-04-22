@@ -853,6 +853,12 @@ class AWQModifier(Modifier, QuantizationMixin):
 
         # Also print summary statistics
         reductions = [m["reduction"] for m in self._error_metrics]
+        if len(reductions) == 0:
+            logger.warning(
+                "No AWQ error metrics were collected; skipping summary statistics."
+            )
+            return
+
         avg_reduction = sum(reductions) / len(reductions)
         min_reduction = min(reductions)
         max_reduction = max(reductions)
