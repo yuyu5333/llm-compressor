@@ -202,6 +202,10 @@ class AutoRoundModifier(Modifier, QuantizationMixin):
     def input_capture_hook(self, module, *args, **kwargs):
         if module._tmp_name not in self._all_module_input:
             self._all_module_input[module._tmp_name] = []
+
+        # Filter out None values from kwargs to prevent auto-round initialization issues
+        kwargs = {k: v for k, v in kwargs.items() if v is not None}
+
         self._all_module_input[module._tmp_name].append((args, kwargs))
 
     def on_start(self, state: State, event: Event, **kwargs):
@@ -396,19 +400,6 @@ class AutoRoundModifier(Modifier, QuantizationMixin):
                 return [self.sequential_targets]
             case _:
                 return self.sequential_targets
-
-    def _unwrapper_quantized_layer(self, model: torch.nn.Module):
-        # auto-round will return WrapperWALayer if activation is quantized
-        for name, module in model.named_modules():
-            if isinstance(module, WrapperWALayer):
-                if "." in name:
-                    parent, child = name.rsplit(".", maxsplit=1)
-                    parent = model.get_submodule(parent)
-                    setattr(parent, child, module.orig_layer)
-                else:
-                    # It's a top-level module
-                    setattr(model, name, module.orig_layer)
-        return model
 
     def _preprocess_qparams(self, model):
         """
