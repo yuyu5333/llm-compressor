@@ -284,7 +284,7 @@ class AutoRoundModifier(Modifier, QuantizationMixin):
             "enable_torch_compile": self.enable_torch_compile,
             "batch_size": self.batch_size,
             "device_map": self.device_ids,
-            "ignore_layers": fp_layers,
+            "ignore_layers": ",".join(fp_layers) if fp_layers else "",
             "model_status": self.model_status,
         }
 
