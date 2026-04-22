@@ -417,6 +417,18 @@ class AWQModifier(Modifier, QuantizationMixin):
                     )
                 )
         self._resolved_mappings = resolved_mappings
+        logger.info(
+            "Resolved {} AWQ mappings (from {} user mappings)",
+            len(self._resolved_mappings),
+            len(self.mappings) if self.mappings is not None else 0,
+        )
+        if len(self._resolved_mappings) > 0:
+            preview = ", ".join(
+                mapping.smooth_name for mapping in self._resolved_mappings[:10]
+            )
+            logger.info("First resolved AWQ smooth layers: {}", preview)
+        else:
+            logger.warning("No AWQ mappings were resolved after regex expansion.")
         return
 
     def _setup_activation_cache_hooks(self) -> None:
@@ -513,6 +525,28 @@ class AWQModifier(Modifier, QuantizationMixin):
             for mapping in self._resolved_mappings
             if mapping.smooth_name in self._smooth_activation_means
         ]
+        logger.info(
+            "AWQ smoothing candidates: resolved_mappings={}, cached_activation_layers={}, mappings_to_smooth={}",
+            len(self._resolved_mappings),
+            len(self._smooth_activation_means),
+            len(mappings_to_smooth),
+        )
+        if len(self._smooth_activation_means) > 0:
+            cached_preview = ", ".join(list(self._smooth_activation_means.keys())[:10])
+            logger.info("First cached AWQ activation layers: {}", cached_preview)
+        if len(mappings_to_smooth) > 0:
+            smooth_preview = ", ".join(
+                mapping.smooth_name for mapping in mappings_to_smooth[:10]
+            )
+            logger.info("First AWQ mappings entering smoothing: {}", smooth_preview)
+        else:
+            unresolved_preview = ", ".join(
+                mapping.smooth_name for mapping in self._resolved_mappings[:10]
+            )
+            logger.warning(
+                "No AWQ mappings entered smoothing. First resolved smooth layers were: {}",
+                unresolved_preview,
+            )
         for mapping in tqdm(mappings_to_smooth, desc="Smoothing"):
             smooth_layer = mapping.smooth_layer
             balance_layers = mapping.balance_layers
