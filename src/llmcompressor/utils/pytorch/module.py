@@ -337,7 +337,12 @@ def get_no_split_params(model: PreTrainedModel) -> Union[str, List[str]]:
 
     :return: list of class names that shouldn't be split
     """
-    no_split_modules = model._get_no_split_modules("auto")
+    # 如果有_get_no_split_modules方法，就用它，否则返回_no_split_modules
+    if hasattr(model, "_get_no_split_modules"):
+        no_split_modules = model._get_no_split_modules("auto")
+    else:
+        no_split_modules = model._no_split_modules
+    
     if len(no_split_modules) <= 0:
         return ALL_TARGET
 
