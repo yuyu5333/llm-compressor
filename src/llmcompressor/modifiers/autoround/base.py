@@ -159,6 +159,7 @@ class AutoRoundModifier(Modifier, QuantizationMixin):
     # private variables
     _all_module_input: Dict[str, List[Tuple]] = PrivateAttr(default_factory=dict)
     _q_input: Optional[torch.Tensor] = PrivateAttr(default=None)
+    _processor: Optional[Any] = PrivateAttr(default=None)
 
     def on_initialize(self, state: State, **kwargs) -> bool:
         """
@@ -166,6 +167,9 @@ class AutoRoundModifier(Modifier, QuantizationMixin):
 
         :param state: session state storing input model and calibration data
         """
+        # capture processor if provided
+        self._processor = kwargs.get("processor")
+
         # apply config to model and prepare calibration hooks
         if QuantizationMixin.has_config(self):
             QuantizationMixin.initialize_quantization(self, state.model)
@@ -264,15 +268,23 @@ class AutoRoundModifier(Modifier, QuantizationMixin):
         # Build kwargs for AutoRound initialization
         ar_quant_scheme = self._mapping_config_to_autoround()
         fp_layers = self.get_unquantized_layer_names(decoding_layer)
+        
+        # Determine tokenizer and processor
+        tokenizer = self._processor
+        processor = self._processor
+        if hasattr(self._processor, "tokenizer"):
+            tokenizer = self._processor.tokenizer
+            
         kwargs = {
-            "tokenizer": "",  # A placeholder
+            "tokenizer": tokenizer or "",
+            "processor": processor,
             "scheme": ar_quant_scheme,
             "iters": self.iters,
             "lr": self.lr,
             "enable_torch_compile": self.enable_torch_compile,
             "batch_size": self.batch_size,
             "device_map": self.device_ids,
-            "fp_layers": ",".join(fp_layers) if fp_layers else "",
+            "ignore_layers": fp_layers,
             "model_status": self.model_status,
         }
 
