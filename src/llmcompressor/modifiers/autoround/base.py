@@ -154,6 +154,7 @@ class AutoRoundModifier(Modifier, QuantizationMixin):
     batch_size: int = 8
     lr: Optional[float] = None
     device_ids: Optional[str] = None
+    model_status: Optional[str] = None
 
     # private variables
     _all_module_input: Dict[str, List[Tuple]] = PrivateAttr(default_factory=dict)
@@ -272,6 +273,7 @@ class AutoRoundModifier(Modifier, QuantizationMixin):
             "batch_size": self.batch_size,
             "device_map": self.device_ids,
             "fp_layers": ",".join(fp_layers) if fp_layers else "",
+            "model_status": self.model_status,
         }
 
         llmc_registered_qparams = self._preprocess_qparams(decoding_layer)
